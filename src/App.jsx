@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState, createRef } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import Color from "./Color";
 import Header from "./Header";
 
@@ -15,9 +15,9 @@ const App = () => {
     const [colors, setColors] = useState([]);
     const [image, setImage] = useState("");
     const [size, setSize] = useState(8);
-    const photoContainer = createRef();
-    const canvasRef = createRef();
-    const inputRef = createRef();
+    const photoContainer = useRef(null);
+    const canvasRef = useRef(null);
+    const inputRef = useRef(null);
 
     const processImg = useCallback(
         (file) => {

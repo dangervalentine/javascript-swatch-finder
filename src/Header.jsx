@@ -1,5 +1,3 @@
-import React from "react";
-
 import logo from "./swatch-finder.svg";
 import download from "./download.svg";
 
