@@ -1,35 +1,31 @@
 import { useState } from "react";
+import { formatColor, copyToClipboard, changeBackground } from "./helpers";
 
-import { copyToClipboard, changeBackground } from "./helpers";
+const Color = ({ color, tier, percentage, format }) => {
+  const [copied, setCopied] = useState(false);
+  const formatted = formatColor(color, format);
 
-const Color = ({ color, weight }) => {
-    const [content, setContent] = useState(color);
-    const isMobile = !!(window.innerWidth < 800);
-    const size = Math.min(2.5, 1 + weight / 15);
-    const emphasis = isMobile ? `${50 * `${size}`}px` : `${80 * `${size}`}px`;
+  const onClick = () => {
+    copyToClipboard(formatted);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 600);
+  };
 
-    const colorStyle = {
-        backgroundColor: color,
-        height: emphasis,
-        width: emphasis,
-    };
+  const bgColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
 
-    const clickColor = () => {
-        copyToClipboard(color);
-        setContent("copied");
-        setTimeout(() => setContent(color), 400);
-    };
-
-    return (
-        <div
-            onMouseOver={() => changeBackground(color)}
-            className="color-block"
-            onClick={clickColor}
-            style={colorStyle}
-        >
-            {content}
-        </div>
-    );
+  return (
+    <div className="color-item" onClick={onClick}>
+      <div
+        className={`color-circle ${tier}`}
+        style={{ backgroundColor: bgColor }}
+        onMouseOver={() => changeBackground(bgColor)}
+      >
+        {copied && "copied"}
+      </div>
+      <span className="color-value">{formatted}</span>
+      <span className="color-percentage">{percentage.toFixed(1)}%</span>
+    </div>
+  );
 };
 
 export default Color;
