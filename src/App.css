@@ -196,6 +196,13 @@ header {
   margin-top: 6px;
 }
 
+.image-wrapper {
+  position: relative;
+  display: inline-block;
+  max-height: 100%;
+  max-width: 100%;
+}
+
 .image-file {
   height: auto;
   max-height: 100%;
@@ -203,9 +210,12 @@ header {
   border-radius: 8px;
   border: 2px dashed var(--border);
   padding: 2px;
+  display: block;
 }
 
 .photo-container:hover .image-file { border-color: var(--text-secondary); }
+
+.photo:hover .image-wrapper .image-file { border-color: var(--text-secondary); }
 
 .photo {
   cursor: pointer;
@@ -224,18 +234,11 @@ header {
 
 input[type="file"] { display: none; }
 
-.photo:hover img { display: none; }
-
 canvas {
   display: none;
   max-height: 100%;
   max-width: 100%;
   border-radius: 8px;
-}
-
-.photo:hover canvas.main-canvas {
-  display: block;
-  position: absolute;
 }
 
 span.bold {
@@ -413,6 +416,52 @@ span.bold {
 .selection-handle.ne { top: -4px; right: -4px; cursor: ne-resize; }
 .selection-handle.sw { bottom: -4px; left: -4px; cursor: sw-resize; }
 .selection-handle.se { bottom: -4px; right: -4px; cursor: se-resize; }
+
+.selection-actions {
+  position: absolute;
+  bottom: -36px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.selection-apply,
+.selection-cancel {
+  padding: 4px 14px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.selection-apply {
+  background: var(--primary);
+  color: var(--text-inverse);
+}
+
+.selection-apply:hover { opacity: 0.85; }
+
+.selection-cancel {
+  background: var(--bg-medium);
+  color: var(--text-secondary);
+}
+
+.selection-cancel:hover { opacity: 0.85; }
+
+.clear-selection-button {
+  padding: 4px 12px;
+  border: 1px solid var(--accent-pink);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent-pink);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.clear-selection-button:hover { opacity: 0.8; }
 
 .selection-scrim {
   position: absolute;

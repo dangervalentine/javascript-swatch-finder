@@ -22,7 +22,7 @@ const Header = () => {
           rel="noopener noreferrer"
           href="https://github.com/victoriousj/javascript-swatch-finder"
         >
-          <p>by victor d. johnson</p>
+          <p>by Danger Valentine</p>
         </a>
       </div>
       <div className="theme-toggle" onClick={toggle} role="button" tabIndex={0}>

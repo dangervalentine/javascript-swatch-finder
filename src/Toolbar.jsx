@@ -10,6 +10,8 @@ const Toolbar = ({
   onModeChange,
   onDownload,
   isMobile,
+  selectionApplied,
+  onClearSelection,
 }) => {
   return (
     <div className="toolbar">
@@ -78,6 +80,15 @@ const Toolbar = ({
           <option value="hsl">HSL</option>
         </select>
       </div>
+
+      {selectionApplied && (
+        <button
+          className="clear-selection-button"
+          onClick={onClearSelection}
+        >
+          Clear Selection
+        </button>
+      )}
 
       <button
         className="download-button"

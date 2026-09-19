@@ -1,5 +1,7 @@
 # Swatch Finder [see it here](https://dangervalentine.github.io/javascript-swatch-finder/)
 
+![Swatch Finder — k-means color clustering](./public/swatch-finder.png)
+
 This will look at an image file that has been uploaded to it and return to you a palette of colors found within that image. The colors will be weighed so that those which appear more often will be returned larger than those that are not.
 
 ---

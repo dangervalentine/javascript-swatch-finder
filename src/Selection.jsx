@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 
-const Selection = ({ onSelectionChange, containerRef }) => {
+const Selection = ({ onApply, onCancel, containerRef }) => {
   const [rect, setRect] = useState(null);
   const [drawing, setDrawing] = useState(false);
   const [dragging, setDragging] = useState(null);
@@ -48,15 +48,15 @@ const Selection = ({ onSelectionChange, containerRef }) => {
 
         if (inX && inY) { setDragging("move"); startRef.current = pos; return; }
 
+        // Clicked outside — start a new selection
         setRect(null);
-        onSelectionChange(null);
       }
 
       setDrawing(true);
       startRef.current = pos;
       setRect({ x: pos.x, y: pos.y, w: 0, h: 0 });
     },
-    [getRelativePos, onSelectionChange]
+    [getRelativePos]
   );
 
   const onPointerMove = useCallback(
@@ -101,18 +101,10 @@ const Selection = ({ onSelectionChange, containerRef }) => {
   );
 
   const onPointerUp = useCallback(() => {
-    if (drawing && rect && rect.w > 1 && rect.h > 1) {
-      onSelectionChange(rect);
-    } else if (dragging && rectRef.current) {
-      onSelectionChange(rectRef.current);
-    } else if (drawing) {
-      setRect(null);
-      onSelectionChange(null);
-    }
     setDrawing(false);
     setDragging(null);
     startRef.current = null;
-  }, [drawing, dragging, rect, onSelectionChange]);
+  }, []);
 
   useEffect(() => {
     const handler = () => {
@@ -126,6 +118,8 @@ const Selection = ({ onSelectionChange, containerRef }) => {
     };
   }, [drawing, dragging, onPointerUp]);
 
+  const hasValidRect = rect && rect.w > 1 && rect.h > 1;
+
   return (
     <div
       className="selection-overlay"
@@ -134,7 +128,7 @@ const Selection = ({ onSelectionChange, containerRef }) => {
       onTouchStart={onPointerDown}
       onTouchMove={onPointerMove}
     >
-      {rect && rect.w > 0 && rect.h > 0 && (
+      {hasValidRect && (
         <>
           <div
             className="selection-rect"
@@ -154,6 +148,22 @@ const Selection = ({ onSelectionChange, containerRef }) => {
             <div className="selection-handle sw" />
             <div className="selection-handle se" />
           </div>
+          {!drawing && !dragging && (
+            <div className="selection-actions" onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
+              <button
+                className="selection-apply"
+                onClick={() => onApply(rect)}
+              >
+                Apply
+              </button>
+              <button
+                className="selection-cancel"
+                onClick={() => { setRect(null); onCancel(); }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -20,8 +20,10 @@ const App = () => {
   const [colorFormat, setColorFormat] = useState("hex");
   const [mode, setMode] = useState("full");
   const [colors, setColors] = useState([]);
-  const [selection, setSelection] = useState(null);
+  const [selectionApplied, setSelectionApplied] = useState(false);
+  const [compositeUrl, setCompositeUrl] = useState(null);
   const photoContainer = useRef(null);
+  const imageWrapperRef = useRef(null);
   const canvasRef = useRef(null);
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
@@ -76,30 +78,30 @@ const App = () => {
     [canvasRef, fileName, pixelSize, paletteSize]
   );
 
-  const processSelection = useCallback(
+  const applySelection = useCallback(
     (selRect) => {
-      if (!selRect || !canvasRef.current || !imgSrc) {
-        setSelection(null);
-        processImg();
-        return;
-      }
-
-      setSelection(selRect);
+      if (!selRect || !canvasRef.current || !imgSrc) return;
 
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
-      const width = canvas.width;
-      const height = canvas.height;
-
-      const sx = Math.round((selRect.x / 100) * width);
-      const sy = Math.round((selRect.y / 100) * height);
-      const sw = Math.round((selRect.w / 100) * width);
-      const sh = Math.round((selRect.h / 100) * height);
-
-      if (sw < 1 || sh < 1) return;
 
       const img = new Image();
       img.onload = () => {
+        const width = (canvas.width = img.width);
+        const height = (canvas.height = img.height);
+
+        // Draw full original image first
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert percentage rect to pixel coords
+        const sx = Math.round((selRect.x / 100) * width);
+        const sy = Math.round((selRect.y / 100) * height);
+        const sw = Math.round((selRect.w / 100) * width);
+        const sh = Math.round((selRect.h / 100) * height);
+
+        if (sw < 1 || sh < 1) return;
+
+        // Pixelate the selection region
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = sw;
         tempCanvas.height = sh;
@@ -115,6 +117,7 @@ const App = () => {
         tempCtx.imageSmoothingEnabled = false;
         tempCtx.drawImage(tempCanvas, 0, 0, pw, ph, 0, 0, sw, sh);
 
+        // Extract colors from selection
         const pixelData = [];
         for (let i = 0; i < pw; i++) {
           for (let j = 0; j < ph; j++) {
@@ -133,22 +136,37 @@ const App = () => {
         const tiered = classifyTiers(clusters);
         setColors(tiered);
 
-        ctx.drawImage(img, 0, 0, width, height);
+        // Bake pixelated region into the composite
         ctx.drawImage(tempCanvas, 0, 0, sw, sh, sx, sy, sw, sh);
+
+        // Create a URL for the composite to display
+        setCompositeUrl(canvas.toDataURL("image/png"));
+        setSelectionApplied(true);
       };
       img.src = imgSrc;
     },
-    [canvasRef, pixelSize, paletteSize, processImg]
+    [canvasRef, pixelSize, paletteSize]
   );
+
+  const clearSelection = useCallback(() => {
+    setSelectionApplied(false);
+    setCompositeUrl(null);
+    // Reprocess full image
+    processImg();
+  }, [processImg]);
 
   const onChange = (e) => {
     if (!e.target.files.length) return;
+    setSelectionApplied(false);
+    setCompositeUrl(null);
     processImg(e.target.files[0]);
   };
 
   const onDrop = (e) => {
     e.preventDefault();
     if (!e.dataTransfer) return;
+    setSelectionApplied(false);
+    setCompositeUrl(null);
     processImg(e.dataTransfer.files[0]);
     photoContainer.current.classList.remove("drag-over");
   };
@@ -163,17 +181,16 @@ const App = () => {
     photoContainer.current.classList.remove("drag-over");
   };
 
+  // Debounced reprocess for full image mode only
   useEffect(() => {
+    if (selectionApplied) return;
+    if (mode === "selection") return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      if (mode === "selection" && selection) {
-        processSelection(selection);
-      } else {
-        processImg();
-      }
+      processImg();
     }, 150);
     return () => clearTimeout(debounceRef.current);
-  }, [processImg, processSelection, pixelSize, paletteSize, mode, selection]);
+  }, [processImg, pixelSize, paletteSize, mode, selectionApplied]);
 
   const downloadImage = () => {
     const a = document.createElement("a");
@@ -185,6 +202,12 @@ const App = () => {
   };
 
   const hasImage = fileName !== "";
+
+  // Determine which image to show
+  const displaySrc = selectionApplied && compositeUrl ? compositeUrl : image;
+
+  // In selection mode (not yet applied): show selection overlay
+  const showSelectionOverlay = mode === "selection" && hasImage && !selectionApplied;
 
   const imageEl =
     image === "" ? (
@@ -199,7 +222,16 @@ const App = () => {
         </div>
       </div>
     ) : (
-      <img className="image-file" src={image} alt="uploaded file" />
+      <div ref={imageWrapperRef} className="image-wrapper">
+        <img className="image-file" src={displaySrc} alt="uploaded file" />
+        {showSelectionOverlay && (
+          <Selection
+            onApply={applySelection}
+            onCancel={() => {}}
+            containerRef={imageWrapperRef}
+          />
+        )}
+      </div>
     );
 
   return (
@@ -214,9 +246,16 @@ const App = () => {
         colorFormat={colorFormat}
         onColorFormatChange={setColorFormat}
         mode={mode}
-        onModeChange={setMode}
+        onModeChange={(newMode) => {
+          if (newMode !== "selection") {
+            clearSelection();
+          }
+          setMode(newMode);
+        }}
         onDownload={downloadImage}
         isMobile={isMobile}
+        selectionApplied={selectionApplied}
+        onClearSelection={clearSelection}
       />
       <div className="container">
         <div
@@ -228,17 +267,11 @@ const App = () => {
         >
           <div
             className={`photo${image === "" ? " border" : ""}`}
-            onClick={handleFormClick}
+            onClick={showSelectionOverlay ? undefined : handleFormClick}
           >
             {imageEl}
             <canvas ref={canvasRef} className="main-canvas" />
           </div>
-          {mode === "selection" && hasImage && (
-            <Selection
-              onSelectionChange={processSelection}
-              containerRef={photoContainer}
-            />
-          )}
         </div>
         <Palette colors={colors} format={colorFormat} />
         <input
